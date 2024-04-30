@@ -3,24 +3,15 @@
 #include <string.h>
 
 #define MAX_CLIENTES 1000
-#define MAX_OPERACOES 100
 
-
+// Estrutura para representar um cliente
 typedef struct {
     char nome[50];
     char cpf[12];
-    char tipo_conta[10]; 
+    char tipo_conta[10]; // comum ou plus
     float saldo;
     char senha[20];
-    
 } Cliente;
-
-
-typedef struct {
-    char tipo_operacao[20]; 
-    float valor;
-    
-} Operacao;
 
 // Função para adicionar um novo cliente
 void novoCliente(Cliente clientes[], int *numClientes) {
@@ -40,15 +31,71 @@ void novoCliente(Cliente clientes[], int *numClientes) {
         clientes[*numClientes] = novoCliente;
         (*numClientes)++;
 
-        // Salvar o cliente em arquivo binário
-        FILE *arquivo = fopen("clientes.bin", "ab");
-        fwrite(&novoCliente, sizeof(Cliente), 1, arquivo);
-        fclose(arquivo);
-
         printf("Novo cliente cadastrado com sucesso!\n");
     } else {
         printf("Limite máximo de clientes atingido!\n");
     }
+}
+
+// Função para apagar um cliente pelo CPF
+void apagarCliente(Cliente clientes[], int *numClientes) {
+    char cpfApagar[12];
+    printf("Digite o CPF do cliente a ser apagado: ");
+    scanf("%s", cpfApagar);
+
+    int encontrado = 0;
+    for (int i = 0; i < *numClientes; i++) {
+        if (strcmp(clientes[i].cpf, cpfApagar) == 0) {
+            // Remover o cliente movendo os elementos posteriores uma posição para frente
+            for (int j = i; j < *numClientes - 1; j++) {
+                clientes[j] = clientes[j + 1];
+            }
+            (*numClientes)--;
+            encontrado = 1;
+            printf("Cliente apagado com sucesso!\n");
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("Cliente não encontrado!\n");
+    }
+}
+
+// Função para listar todos os clientes
+void listarClientes(Cliente clientes[], int numClientes) {
+    printf("--- Lista de Clientes ---\n");
+    for (int i = 0; i < numClientes; i++) {
+        printf("Nome: %s\n", clientes[i].nome);
+        printf("CPF: %s\n", clientes[i].cpf);
+        printf("Tipo de conta: %s\n", clientes[i].tipo_conta);
+        printf("Saldo: %.2f\n", clientes[i].saldo);
+        printf("------------------------\n");
+    }
+}
+
+// Função para salvar os clientes em um arquivo binário
+void salvarClientes(Cliente clientes[], int numClientes) {
+    FILE *arquivo = fopen("clientes.bin", "wb");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo para escrita!\n");
+        exit(1);
+    }
+
+    fwrite(clientes, sizeof(Cliente), numClientes, arquivo);
+    fclose(arquivo);
+}
+
+// Função para carregar os clientes de um arquivo binário
+void carregarClientes(Cliente clientes[], int *numClientes) {
+    FILE *arquivo = fopen("clientes.bin", "rb");
+    if (arquivo == NULL) {
+        printf("Arquivo de clientes não encontrado. Iniciando com lista vazia.\n");
+        return;
+    }
+
+    *numClientes = fread(clientes, sizeof(Cliente), MAX_CLIENTES, arquivo);
+    fclose(arquivo);
 }
 
 // Função principal
@@ -57,13 +104,16 @@ int main() {
     Cliente clientes[MAX_CLIENTES];
     int numClientes = 0;
 
+    // Carregar os clientes do arquivo binário
+    carregarClientes(clientes, &numClientes);
+
     // Loop principal
     int opcao;
     do {
         // Exibir menu
         printf("\n--- Menu de Opções ---\n");
         printf("1. Novo cliente\n");
-        printf("2. Apaga cliente\n");
+        printf("2. Apagar cliente\n");
         printf("3. Listar clientes\n");
         printf("4. Débito\n");
         printf("5. Depósito\n");
@@ -78,7 +128,12 @@ int main() {
             case 1:
                 novoCliente(clientes, &numClientes);
                 break;
-            // Adicione os outros casos conforme necessário
+            case 2:
+                apagarCliente(clientes, &numClientes);
+                break;
+            case 3:
+                listarClientes(clientes, numClientes);
+                break;
             case 0:
                 printf("Encerrando o programa...\n");
                 break;
@@ -87,5 +142,9 @@ int main() {
         }
     } while (opcao != 0);
 
+    // Salvar os clientes no arquivo binário antes de encerrar o programa
+    salvarClientes(clientes, numClientes);
+
     return 0;
 }
+
