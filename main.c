@@ -74,6 +74,63 @@ void listarClientes(Cliente clientes[], int numClientes) {
     }
 }
 
+// Função para debitar um valor da conta do cliente
+void debitar(Cliente clientes[], int numClientes) {
+    char cpf[12];
+    char senha[20];
+    float valor;
+
+    printf("CPF: ");
+    scanf("%s", cpf);
+    printf("Senha: ");
+    scanf("%s", senha);
+
+    int encontrado = 0;
+    for (int i = 0; i < numClientes; i++) {
+        if (strcmp(clientes[i].cpf, cpf) == 0 && strcmp(clientes[i].senha, senha) == 0) {
+            printf("Valor a debitar: ");
+            scanf("%f", &valor);
+            if (clientes[i].saldo >= valor) {
+                clientes[i].saldo -= valor;
+                printf("Débito realizado com sucesso!\n");
+            } else {
+                printf("Saldo insuficiente!\n");
+            }
+            encontrado = 1;
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("CPF ou senha incorretos!\n");
+    }
+}
+
+// Função para depositar um valor na conta do cliente
+void depositar(Cliente clientes[], int numClientes) {
+    char cpf[12];
+    float valor;
+
+    printf("CPF: ");
+    scanf("%s", cpf);
+
+    int encontrado = 0;
+    for (int i = 0; i < numClientes; i++) {
+        if (strcmp(clientes[i].cpf, cpf) == 0) {
+            printf("Valor a depositar: ");
+            scanf("%f", &valor);
+            clientes[i].saldo += valor;
+            printf("Depósito realizado com sucesso!\n");
+            encontrado = 1;
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("Cliente não encontrado!\n");
+    }
+}
+
 // Função para salvar os clientes em um arquivo binário
 void salvarClientes(Cliente clientes[], int numClientes) {
     FILE *arquivo = fopen("clientes.bin", "wb");
@@ -134,6 +191,12 @@ int main() {
             case 3:
                 listarClientes(clientes, numClientes);
                 break;
+            case 4:
+                debitar(clientes, numClientes);
+                break;
+            case 5:
+                depositar(clientes, numClientes);
+                break;
             case 0:
                 printf("Encerrando o programa...\n");
                 break;
@@ -147,4 +210,3 @@ int main() {
 
     return 0;
 }
-
