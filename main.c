@@ -90,11 +90,22 @@ void debitar(Cliente clientes[], int numClientes) {
         if (strcmp(clientes[i].cpf, cpf) == 0 && strcmp(clientes[i].senha, senha) == 0) {
             printf("Valor a debitar: ");
             scanf("%f", &valor);
-            if (clientes[i].saldo >= valor) {
-                clientes[i].saldo -= valor;
-                printf("Débito realizado com sucesso!\n");
-            } else {
-                printf("Saldo insuficiente!\n");
+
+            // Verificar o tipo de conta e aplicar as regras correspondentes
+            if (strcmp(clientes[i].tipo_conta, "comum") == 0) {
+                if (clientes[i].saldo - valor >= -1000) {
+                    clientes[i].saldo -= valor * 1.05; // Taxa de 5% para conta comum
+                    printf("Débito realizado com sucesso!\n");
+                } else {
+                    printf("Saldo insuficiente!\n");
+                }
+            } else if (strcmp(clientes[i].tipo_conta, "plus") == 0) {
+                if (clientes[i].saldo - valor >= -5000) {
+                    clientes[i].saldo -= valor * 1.03; // Taxa de 3% para conta plus
+                    printf("Débito realizado com sucesso!\n");
+                } else {
+                    printf("Saldo insuficiente!\n");
+                }
             }
             encontrado = 1;
             break;
@@ -128,6 +139,125 @@ void depositar(Cliente clientes[], int numClientes) {
 
     if (!encontrado) {
         printf("Cliente não encontrado!\n");
+    }
+}
+// Função para mostrar o extrato de transações de um cliente e criar um arquivo de texto com o extrato
+void extrato(Cliente clientes[], int numClientes) {
+    char cpf[12];
+    char senha[20];
+
+    printf("CPF: ");
+    scanf("%s", cpf);
+    printf("Senha: ");
+    scanf("%s", senha);
+
+    int encontrado = 0;
+    for (int i = 0; i < numClientes; i++) {
+        if (strcmp(clientes[i].cpf, cpf) == 0 && strcmp(clientes[i].senha, senha) == 0) {
+            printf("--- Extrato ---\n");
+            printf("Nome: %s\n", clientes[i].nome);
+            printf("CPF: %s\n", clientes[i].cpf);
+            printf("Tipo de conta: %s\n", clientes[i].tipo_conta);
+            printf("Saldo: %.2f\n", clientes[i].saldo);
+
+            // Criar o arquivo de extrato
+            FILE *extratoFile = fopen("extrato.txt", "w");
+            if (extratoFile == NULL) {
+                printf("Erro ao criar o arquivo de extrato!\n");
+                return;
+            }
+            fprintf(extratoFile, "--- Extrato ---\n");
+            fprintf(extratoFile, "Nome: %s\n", clientes[i].nome);
+            fprintf(extratoFile, "CPF: %s\n", clientes[i].cpf);
+            fprintf(extratoFile, "Tipo de conta: %s\n", clientes[i].tipo_conta);
+            fprintf(extratoFile, "Saldo: %.2f\n", clientes[i].saldo);
+            fclose(extratoFile);
+
+            printf("Extrato salvo no arquivo 'extrato.txt'.\n");
+            encontrado = 1;
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("CPF ou senha incorretos!\n");
+    }
+}
+
+
+
+// Função para registrar as transferências em um arquivo de texto
+void registrarTransferencia(const char *cpfOrigem, const char *cpfDestino, float valor) {
+    FILE *arquivo = fopen("transferencias.txt", "a"); // "a" para abrir o arquivo em modo de adição (append)
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo de transferências para escrita!\n");
+        return;
+    }
+
+    // Escrever os detalhes da transferência no arquivo
+    fprintf(arquivo, "Transferência de %s para %s no valor de %.2f\n", cpfOrigem, cpfDestino, valor);
+    fclose(arquivo);
+}
+
+// Função para transferir dinheiro entre contas
+void transferencia(Cliente clientes[], int numClientes) {
+    char cpfOrigem[12];
+    char cpfDestino[12];
+    char senha[20];
+    float valor;
+
+    printf("CPF (origem): ");
+    scanf("%s", cpfOrigem);
+    printf("Senha: ");
+    scanf("%s", senha);
+
+    int encontradoOrigem = 0;
+    for (int i = 0; i < numClientes; i++) {
+        if (strcmp(clientes[i].cpf, cpfOrigem) == 0 && strcmp(clientes[i].senha, senha) == 0) {
+            encontradoOrigem = 1;
+
+            printf("CPF (destino): ");
+            scanf("%s", cpfDestino);
+
+            int encontradoDestino = 0;
+            for (int j = 0; j < numClientes; j++) {
+                if (strcmp(clientes[j].cpf, cpfDestino) == 0) {
+                    encontradoDestino = 1;
+                    break;
+                }
+            }
+
+            if (!encontradoDestino) {
+                printf("CPF de destino não encontrado!\n");
+                return;
+            }
+
+            printf("Valor a transferir: ");
+            scanf("%f", &valor);
+
+            // Verificar se o saldo na conta de origem é suficiente para a transferência
+            if (clientes[i].saldo >= valor) {
+                // Realizar a transferência
+                for (int k = 0; k < numClientes; k++) {
+                    if (strcmp(clientes[k].cpf, cpfDestino) == 0) {
+                        clientes[i].saldo -= valor;
+                        clientes[k].saldo += valor;
+                        printf("Transferência realizada com sucesso!\n");
+
+                        // Registrar a transferência em um arquivo de texto
+                        registrarTransferencia(cpfOrigem, cpfDestino, valor);
+                        return;
+                    }
+                }
+            } else {
+                printf("Saldo insuficiente para a transferência!\n");
+                return;
+            }
+        }
+    }
+
+    if (!encontradoOrigem) {
+        printf("CPF ou senha incorretos!\n");
     }
 }
 
@@ -196,6 +326,12 @@ int main() {
                 break;
             case 5:
                 depositar(clientes, numClientes);
+                break;
+            case 6:
+                extrato(clientes, numClientes);
+                break;
+            case 7:
+                transferencia(clientes, numClientes);
                 break;
             case 0:
                 printf("Encerrando o programa...\n");
